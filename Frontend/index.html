@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>imagenes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Modelo de imagenes</h1>
+  <div class="card">
+    <h2>Elige la imagen que quieres detectar</h2>
+    <input type="file" id="inputImagen" accept="image/*" class="imagen"/>
+    <br />
+    <img id="preview" src="" alt="" style="display: none" />
+    <br />
+    <button id="btnDetectar">Detectar</button>
+    <p id="estado" class="cargando"></p>
+    <div id="resultados"></div>
+  </div>
+
+  <script>
+    const input = document.getElementById("inputImagen");
+    const preview = document.getElementById("preview");
+    const btn = document.getElementById("btnDetectar");
+    const resultadosDiv = document.getElementById("resultados");
+    const estado = document.getElementById("estado");
+
+    let imagenSeleccionada = null;
+
+    input.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        imagenSeleccionada = file;
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+        resultadosDiv.innerHTML = "";
+      }
+    });
+
+    btn.addEventListener("click", async () => {
+      if (!imagenSeleccionada) {
+        alert("Por favor selecciona una imagen primero.");
+        return;
+      }
+
+      estado.textContent = "Analizando imagen...";
+      resultadosDiv.innerHTML = "";
+
+      const formData = new FormData();
+      formData.append("image", imagenSeleccionada);
+
+      try {
+        const respuesta = await fetch("http://127.0.0.1:5000/detect", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await respuesta.json();
+        estado.textContent = "";
+
+        if (data.resultados && data.resultados.length > 0) {
+          data.resultados.forEach((r) => {
+            const item = document.createElement("div");
+            item.className = "resultado";
+            item.textContent = `${r.nombre} - Confianza: ${(r.confianza * 100).toFixed(1)}%`;
+            resultadosDiv.appendChild(item);
+          });
+        } else if (data.mensaje) {
+          resultadosDiv.innerHTML = `<p>${data.mensaje}</p>`;
+        } else {
+          resultadosDiv.innerHTML = "<p>No se detectaron objetos.</p>";
+        }
+      } catch (error) {
+        estado.textContent = "";
+        alert("Error al conectar con el servidor o procesar la imagen.");
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>
