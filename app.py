@@ -11,20 +11,22 @@ CORS(app)
 model = YOLO("runs/detect/yolo_entrenamiento_demo/weights/best.pt")
 
 class_names = ['Pato 🦆', 'Perro 🐶', 'Persona 👨']
-target_classes = [0, 1, 2]  
+target_classes = [0, 1, 2]
+
+@app.route("/")
+def home():
+    return "API funcionando correctamente"
 
 @app.route('/detect', methods=['POST'])
 def detect():
     if 'image' not in request.files:
         return jsonify({"error": "No se envió imagen"}), 400
 
- 
     file = request.files['image']
     temp_dir = tempfile.mkdtemp()
     path = os.path.join(temp_dir, file.filename)
     file.save(path)
 
-    # Ejecutar inferencia
     results = model(path, conf=0.1)
     result = results[0]
 
@@ -40,7 +42,6 @@ def detect():
                 "confianza": conf
             })
 
-
     if not detecciones:
         return jsonify({
             "resultados": [],
@@ -49,9 +50,6 @@ def detect():
 
     return jsonify({"resultados": detecciones})
 
-import os
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
